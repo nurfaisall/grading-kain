@@ -10,6 +10,7 @@ import DefectTrendChart from '../components/DefectTrendChart';
 import GradingDistribution from '../components/GradingDistribution';
 import DefectTypeChart from '../components/DefectTypeChart';
 import ProductivityChart from '../components/ProductivityChart';
+import { useState, useEffect } from 'react';
 
 const Dashboard = () => {
     // Sample data untuk trend cacat mingguan
@@ -50,6 +51,35 @@ const Dashboard = () => {
         { day: 'Jum', target: 1200, actual: 1220, defective: 40 },
         { day: 'Sab', target: 1200, actual: 1150, defective: 48 },
     ];
+
+    // untuk params
+    const [option, setOption] = useState('db_zb')
+    const [date, setDate] = useState(null)
+
+    const params = {
+        option: option,
+        date: date
+    }
+
+    const [data, setData] = useState([])
+    const getDataDayNow = async () => {
+        const keys = Object.keys(params)
+        const values = Object.values(params)
+        const paramas = new URLSearchParams()
+        for (let i = 0; i < keys.length; i++) {
+            if (values[i] !== null) {
+                paramas.append(keys[i], values[i])
+            }
+        }
+        const response = await fetch(import.meta.env.VITE_API_URL + '/main/gradingByDay?' + paramas.toString())
+        const data = await response.json()
+        console.log(data)
+
+    }
+    useEffect(() => {
+
+        getDataDayNow()
+    }, []);
 
     return (
         <div>
