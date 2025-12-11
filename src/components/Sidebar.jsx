@@ -32,7 +32,7 @@ const Sidebar = () => {
                 transition={{ delay: 0.2 }}
                 className="mb-8"
             >
-                <h1 className="text-2xl font-bold gradient-text">Fabric QC</h1>
+                <h1 className="text-2xl font-bold gradient-text">Data Grading</h1>
                 <p className="text-sm text-slate-400 mt-1">Quality Control System</p>
             </motion.div>
 

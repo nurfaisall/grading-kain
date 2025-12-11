@@ -10,8 +10,12 @@ import DefectTrendChart from '../components/DefectTrendChart';
 import GradingDistribution from '../components/GradingDistribution';
 import DefectTypeChart from '../components/DefectTypeChart';
 import ProductivityChart from '../components/ProductivityChart';
+import axios from 'axios';
+import { useEffect, useState } from 'react';
 
 const Dashboard = () => {
+
+
     // Sample data untuk trend cacat mingguan
     const trendData = [
         { week: 'Minggu 1', gradeA: 850, gradeB: 120, gradeC: 45, reject: 15 },
@@ -51,6 +55,44 @@ const Dashboard = () => {
         { day: 'Sab', target: 1200, actual: 1150, defective: 48 },
     ];
 
+    const [data, setData] = useState([]);
+    const [date, setDate] = useState('')
+    const [dataYesterday, setDataYesterday] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [option, setOption] = useState("db_zb")
+
+    const getGradingByDay = async (date) => {
+        const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option, day: date } });
+        const data = await request.data;
+        setData(data.data);
+        setIsLoading(false);
+        console.log(data.data);
+
+        return data;
+    }
+
+    const lifeCycle = async () => {
+        const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option } });
+        const data = await request.data;
+        console.log("life");
+
+        console.log(data.data['df'][0]['TANGGAL']);
+        setDate(formated(data.data['df'][0]['TANGGAL']))
+    }
+
+    const formated = (date) => {
+        const dd = new Date(date).getDate().toString().length < 2 ? "0" + new Date(date).getDate().toString() : new Date(date).getDate().toString()
+        const mm = new Date(date).getMonth().toString().length < 2 ? "0" + new Date(date).getMonth().toString() : new Date(date).getMonth().toString()
+        const yyyy = new Date(date).getFullYear()
+        return `${yyyy}-${mm}-${dd}`
+    }
+
+    useEffect(() => {
+        getGradingByDay();
+        lifeCycle();
+
+    }, []);
+
     return (
         <div>
             {/* Page Header */}
@@ -60,16 +102,28 @@ const Dashboard = () => {
                 transition={{ duration: 0.5 }}
                 className="mb-8"
             >
-                <h1 className="text-3xl font-bold gradient-text mb-2">Dashboard Overview</h1>
+                <div className='flex justify-between w-full items-center'>
+                    <h1 className="text-3xl font-bold gradient-text mb-2">Dashboard Overview</h1>
+                    <div>
+
+                        <span className='text-lg font-semibold gradient-text'>Tanggal Grading : </span>
+                        {date &&
+                            <input type="date" className='gradient-text bg-transparent border rounded-md p-1' value={date} onChange={(e) => {
+                                getGradingByDay(e.target.value); console.log(e.target.value + "-<<<"); setDate(e.target.value);
+                            }} />
+                        }
+                    </div>
+                </div>
                 <p className="text-slate-400">Monitor your fabric grading performance in real-time</p>
             </motion.div>
 
             {/* Stats Grid */}
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard
                     title="Total Produksi"
-                    value="6,749"
-                    unit="meter"
+                    value={isLoading ? "Loading..." : data['total_sum']['FINISH'].toFixed(2)}
+                    unit="yard"
                     change="+12.5"
                     trend="up"
                     icon={Package}
@@ -77,7 +131,7 @@ const Dashboard = () => {
                 />
                 <StatCard
                     title="Grade A"
-                    value="82.5"
+                    value={isLoading ? "Loading..." : (((data['total_sum']['A1_YARD'] + data['total_sum']['A2_YARD'] + data['total_sum']['A3_YARD'] + data['total_sum']['A4_YARD']) / data['total_sum']['FINISH']) * 100).toFixed(1)}
                     unit="%"
                     change="+3.2"
                     trend="up"
@@ -85,8 +139,26 @@ const Dashboard = () => {
                     delay={0.1}
                 />
                 <StatCard
-                    title="Tingkat Cacat"
-                    value="13.8"
+                    title="Tingkat Cacat B Processing"
+                    value={isLoading ? "Loading..." : ((data['total_sum']['B_PROSES_YARD'] / data['total_sum']['FINISH']) * 100).toFixed(1)}
+                    unit="%"
+                    change="-2.1"
+                    trend="down"
+                    icon={AlertTriangle}
+                    delay={0.2}
+                />
+                <StatCard
+                    title="Tingkat Cacat B Weaving"
+                    value={isLoading ? "Loading..." : ((data['total_sum']['GRADE_B_WEAVING_YARD'] / data['total_sum']['FINISH']) * 100).toFixed(1)}
+                    unit="%"
+                    change="-2.1"
+                    trend="down"
+                    icon={AlertTriangle}
+                    delay={0.2}
+                />
+                <StatCard
+                    title="Tingkat Cacat B Persiapan"
+                    value={isLoading ? "Loading..." : ((data['total_sum']['GRADE_B_PERSIAPAN_YARD'] / data['total_sum']['FINISH']) * 100).toFixed(1)}
                     unit="%"
                     change="-2.1"
                     trend="down"
@@ -103,6 +175,7 @@ const Dashboard = () => {
                     delay={0.3}
                 />
             </div>
+
 
             {/* Charts Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
