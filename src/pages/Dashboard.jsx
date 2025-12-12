@@ -18,12 +18,12 @@ const Dashboard = () => {
 
     // Sample data untuk trend cacat mingguan
     const trendData = [
-        { week: 'Minggu 1', gradeA: 850, gradeB: 120, gradeC: 45, reject: 15 },
-        { week: 'Minggu 2', gradeA: 920, gradeB: 95, gradeC: 38, reject: 12 },
-        { week: 'Minggu 3', gradeA: 880, gradeB: 110, gradeC: 42, reject: 18 },
-        { week: 'Minggu 4', gradeA: 950, gradeB: 85, gradeC: 35, reject: 10 },
-        { week: 'Minggu 5', gradeA: 1020, gradeB: 75, gradeC: 28, reject: 8 },
-        { week: 'Minggu 6', gradeA: 980, gradeB: 90, gradeC: 32, reject: 11 },
+        { tanggal: 'Minggu 1', gradeA: 850, gradeB: 120, gradeC: 45, reject: 15 },
+        { tanggal: 'Minggu 2', gradeA: 920, gradeB: 95, gradeC: 38, reject: 12 },
+        { tanggal: 'Minggu 3', gradeA: 880, gradeB: 110, gradeC: 42, reject: 18 },
+        { tanggal: 'Minggu 4', gradeA: 950, gradeB: 85, gradeC: 35, reject: 10 },
+        { tanggal: 'Minggu 5', gradeA: 1020, gradeB: 75, gradeC: 28, reject: 8 },
+        { tanggal: 'Minggu 6', gradeA: 980, gradeB: 90, gradeC: 32, reject: 11 },
     ];
 
     // Sample data untuk jenis cacat
@@ -55,6 +55,7 @@ const Dashboard = () => {
         { day: 'Sab', target: 1200, actual: 1150, defective: 48 },
     ];
 
+    const [listData, setListData] = useState([])
     const [data, setData] = useState([]);
     const [date, setDate] = useState('')
     const [dataYesterday, setDataYesterday] = useState([]);
@@ -65,8 +66,22 @@ const Dashboard = () => {
         const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option, day: date } });
         const data = await request.data;
         setData(data.data);
+        setListData([]);
+        for (let i = 0; i < 6; i++) {
+            const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option, day: date } });
+            const data = await request.data;
+
+            const gradeA = data.data['total_sum']['A1_YARD'] + data.data['total_sum']['A2_YARD'] + data.data['total_sum']['A3_YARD'] + data.data['total_sum']['A4_YARD']
+            const gradeB = data.data['total_sum']['B_PROSES_YARD'] + data.data['total_sum']['GRADE_B_PERSIAPAN_YARD'] + data.data['total_sum']['GRADE_B_WEAVING_YARD']
+
+
+            setListData(listData => [...listData, data.data]);
+            // setTrendData(trendData => [...trendData, {}]);
+        }
+        console.log("list data");
+        console.log(listData);
+
         setIsLoading(false);
-        console.log(data.data);
 
         return data;
     }

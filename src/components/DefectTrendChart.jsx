@@ -52,7 +52,7 @@ const DefectTrendChart = ({ data }) => {
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#334155" opacity={0.3} />
                     <XAxis
-                        dataKey="week"
+                        dataKey="tanggal"
                         stroke="#94a3b8"
                         tick={{ fill: '#94a3b8' }}
                         tickLine={{ stroke: '#334155' }}
