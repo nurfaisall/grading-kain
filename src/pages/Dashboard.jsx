@@ -17,14 +17,7 @@ const Dashboard = () => {
 
 
     // Sample data untuk trend cacat mingguan
-    const trendData = [
-        { tanggal: 'Minggu 1', gradeA: 850, gradeB: 120, gradeC: 45, reject: 15 },
-        { tanggal: 'Minggu 2', gradeA: 920, gradeB: 95, gradeC: 38, reject: 12 },
-        { tanggal: 'Minggu 3', gradeA: 880, gradeB: 110, gradeC: 42, reject: 18 },
-        { tanggal: 'Minggu 4', gradeA: 950, gradeB: 85, gradeC: 35, reject: 10 },
-        { tanggal: 'Minggu 5', gradeA: 1020, gradeB: 75, gradeC: 28, reject: 8 },
-        { tanggal: 'Minggu 6', gradeA: 980, gradeB: 90, gradeC: 32, reject: 11 },
-    ];
+    const [trendData, setTrendData] = useState([]);
 
     // Sample data untuk jenis cacat
     const defectTypeData = [
@@ -38,12 +31,12 @@ const Dashboard = () => {
     ];
 
     // Sample data untuk distribusi grading
-    const gradingData = [
-        { name: 'Grade A', value: 5780, percentage: 82.5 },
-        { name: 'Grade B', value: 675, percentage: 9.6 },
-        { name: 'Grade C', value: 220, percentage: 3.1 },
-        { name: 'Reject', value: 74, percentage: 1.1 },
-    ];
+    const [gradingData, setGradingData] = useState([
+        // { name: 'Grade A', value: 5780, percentage: 82.5 },
+        // { name: 'Grade B', value: 675, percentage: 9.6 },
+        // { name: 'Grade C', value: 220, percentage: 3.1 },
+        // { name: 'Reject', value: 74, percentage: 1.1 },
+    ]);
 
     // Sample data untuk produktivitas harian
     const productivityData = [
@@ -61,25 +54,55 @@ const Dashboard = () => {
     const [dataYesterday, setDataYesterday] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [option, setOption] = useState("db_zb")
+    const [lifeCycles, setLifeCycle] = useState([])
 
     const getGradingByDay = async (date) => {
+        setTrendData([]);
         const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option, day: date } });
         const data = await request.data;
         setData(data.data);
+        const gradeA = data.data['total_sum']['A1_YARD'] + data.data['total_sum']['A2_YARD'] + data.data['total_sum']['A3_YARD'] + data.data['total_sum']['A4_YARD']
+        const gradeB = data.data['total_sum']['B_PROSES_YARD'] + data.data['total_sum']['GRADE_B_PERSIAPAN_YARD'] + data.data['total_sum']['GRADE_B_WEAVING_YARD']
+        const gradeC = data.data['total_sum']['B_PROSES_YARD']
+        const reject = data.data['total_sum']['B_PROSES_YARD']
+
+        setGradingData([
+            { name: 'Grade A', value: gradeA, percentage: parseFloat(gradeA / data.data['total_sum']['FINISH'] * 100).toFixed(2) },
+            { name: 'Grade B', value: gradeB, percentage: parseFloat(gradeB / data.data['total_sum']['FINISH'] * 100).toFixed(2) },
+            { name: 'Grade C', value: gradeC, percentage: parseFloat(gradeC / data.data['total_sum']['FINISH'] * 100).toFixed(2) },
+            { name: 'Reject', value: reject, percentage: parseFloat(reject / data.data['total_sum']['FINISH'] * 100).toFixed(2) },
+        ])
         setListData([]);
+        if (date == undefined) {
+            setDate(formated(data.data['df'][0]['TANGGAL']))
+        }
+        let counter = 0;
         for (let i = 0; i < 6; i++) {
-            const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option, day: date } });
-            const data = await request.data;
 
-            const gradeA = data.data['total_sum']['A1_YARD'] + data.data['total_sum']['A2_YARD'] + data.data['total_sum']['A3_YARD'] + data.data['total_sum']['A4_YARD']
-            const gradeB = data.data['total_sum']['B_PROSES_YARD'] + data.data['total_sum']['GRADE_B_PERSIAPAN_YARD'] + data.data['total_sum']['GRADE_B_WEAVING_YARD']
+            const d = new Date(String(date));
+            let gradeA = 0;
+            let gradeB = 0;
+            let gradeC = 0;
+            let reject = 0;
+            try {
+                d.setDate(d.getDate() - i);
+                console.log(d.toISOString().split('T')[0]);
 
+                const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option, day: d.toISOString().split('T')[0] } });
+                const data = await request.data;
+                gradeA = data.data['total_sum']['A1_YARD'] + data.data['total_sum']['A2_YARD'] + data.data['total_sum']['A3_YARD'] + data.data['total_sum']['A4_YARD']
+                gradeB = data.data['total_sum']['B_PROSES_YARD'] + data.data['total_sum']['GRADE_B_PERSIAPAN_YARD'] + data.data['total_sum']['GRADE_B_WEAVING_YARD']
+                gradeC = data.data['total_sum']['B_PROSES_YARD']
+                reject = data.data['total_sum']['B_PROSES_YARD']
+            } catch (error) {
 
+            }
+
+            setTrendData(trendData => [{ tanggal: d.toISOString().split('T')[0], gradeA: gradeA, gradeB: gradeB, gradeC: gradeC, reject: reject }, ...trendData]);
             setListData(listData => [...listData, data.data]);
-            // setTrendData(trendData => [...trendData, {}]);
         }
         console.log("list data");
-        console.log(listData);
+        console.log(trendData);
 
         setIsLoading(false);
 
@@ -89,10 +112,8 @@ const Dashboard = () => {
     const lifeCycle = async () => {
         const request = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/main/gradingByDay`, { params: { option: option } });
         const data = await request.data;
-        console.log("life");
-
-        console.log(data.data['df'][0]['TANGGAL']);
         setDate(formated(data.data['df'][0]['TANGGAL']))
+        getGradingByDay(formated(data.data['df'][0]['TANGGAL']))
     }
 
     const formated = (date) => {
@@ -103,7 +124,6 @@ const Dashboard = () => {
     }
 
     useEffect(() => {
-        getGradingByDay();
         lifeCycle();
 
     }, []);
